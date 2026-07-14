@@ -38,21 +38,21 @@ public class MaxKBController {
     @Operation(summary="AI上传文件")
     public Result<MaxKBChatMessageDTO.DocumentInfo> upload(@RequestParam String source_type, @RequestParam String source_id, @RequestParam(value="file") MultipartFile multipartFile) {
         MaxKBChatMessageDTO.DocumentInfo res = this.maxKbService.uploadFileToMaxKBAndBuildInfo(multipartFile);
-        return Result.success((Object)res);
+        return Result.success(res);
     }
 
     @GetMapping(value={"/get-chat-id"})
     @Operation(summary="获取chat_id")
     public Result<String> getChatId() {
         String chatId = this.maxKbService.getChatId();
-        return Result.success((Object)chatId);
+        return Result.success(chatId);
     }
 
     @PostMapping(value={"/chat"})
     @Operation(summary="AI聊天")
     public Result<String> chat(@RequestBody MaxKBChatMessageDTO maxKBChatMessageDTO) {
         String res = this.maxKbService.createChat(maxKBChatMessageDTO);
-        return Result.success((Object)res);
+        return Result.success(res);
     }
 
     @Operation(summary="AI流式聊天")
@@ -66,7 +66,7 @@ public class MaxKBController {
     @PostMapping(value={"/chat-sync"})
     public Result<String> chatSync(@RequestBody MaxKBChatMessageDTO chatMessageDTO) {
         String res = this.maxKbService.chatSync(null, chatMessageDTO);
-        return Result.success((Object)res);
+        return Result.success(res);
     }
 
     @GetMapping(path={"/auto-generated-entry"})

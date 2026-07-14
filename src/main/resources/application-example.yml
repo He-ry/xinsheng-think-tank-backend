@@ -1,0 +1,132 @@
+server:
+  port: 8080
+
+
+logging:
+  level:
+    org.springframework.web.servlet.resource: DEBUG
+    org.dromara.trans.listener.TransMessageListener: error
+
+spring:
+  application:
+    name: xinsheng-think-tank-backend
+  datasource:
+    dynamic:
+      primary: master
+      datasource:
+        master:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://<your-db-host>:3306/xinsheng-think-tank?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+          username: <your-db-username>
+          password: <your-db-password>
+  main:
+    banner-mode: console
+  banner:
+    charset: UTF-8
+  servlet:
+    multipart:
+      max-file-size: 10GB
+      max-request-size: 10GB
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    call-setters-on-nulls: true
+    lazy-loading-enabled: false
+    default-statement-timeout: 30
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    banner: true
+    db-config:
+      id-type: ASSIGN_ID
+      table-prefix: t_
+      table-underline: true
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+auto-table:
+  enable: true
+  show-banner: true
+  model-package: com.tracker.*.models.entity
+  auto-build-database: true
+  init-data:
+    enable: true
+    base-path: classpath:sql
+  mysql:
+    table-default-charset: utf8mb4
+    table-default-collation: utf8mb4_general_ci
+    column-default-charset: utf8mb4
+    column-default-collation: utf8mb4_general_ci
+
+easy-trans:
+  is-enable-global: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui/index.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  configs:
+    title: 信胜智库
+    description: 信胜智库
+    version: 1.0.0
+    author: Hery
+    url:
+    email: admin@edu.com
+    license: Apache License 2.0
+    license-url: https://www.apache.org/licenses/LICENSE-2.0
+
+knife4j:
+  enable: false
+
+# Minio 配置
+minio:
+  endpoint: http://<your-minio-host>:9000
+  bucketName: <your-bucket-name>
+  access-key: <your-access-key>
+  secret-key: <your-secret-key>
+
+
+file:
+  upload-dir: /path/to/upload/dir
+
+host: http://<your-host>
+
+
+# maxkb工作流配置
+maxkb:
+  host: http://<your-maxkb-host>:8080
+  api-key: <your-maxkb-api-key>
+  api-path:
+    upload: /chat/api/oss/file
+    chat-id: /chat/api/chat_message/chat_id
+    chat: /chat/api/open
+
+
+# jwt配置
+jwt:
+  secret: <your-jwt-secret-at-least-32-bytes>
+  access-token:
+    default-expire-seconds: 86400
+  refresh-token:
+    default-expire-seconds: 2592000
+  whitelist:
+    - /api/v1/user/auth
+    - /api/v1/user/login
+    - /api/v1/user/check
+    - /doc.html
+    - /favicon.ico
+    - /v3/api-docs/**
+    - /api/v1/wiki/add-view
+    - /api/v1/search/search
+    - /api/v1/search/random-recommend
+    - /api/v1/system/**
+    - /api/v1/comments/list
+    - /files/**
+    - /api/v1/wiki/entries
+    - /api/v1/wiki/entry

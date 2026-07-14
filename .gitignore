@@ -19,3 +19,6 @@ Thumbs.db
 *.jar
 *.war
 *.log
+
+# 敏感配置文件（本地保留，仓库使用 application-example.yml）
+application.yml

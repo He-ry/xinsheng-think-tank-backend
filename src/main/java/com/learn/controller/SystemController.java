@@ -33,7 +33,7 @@ public class SystemController {
     @Operation(summary="获取访客数量")
     public Result<HashMap<String, Object>> getVisitorCount() {
         HashMap res = this.systemService.getVisitorCount();
-        return Result.success((Object)res);
+        return Result.success(res);
     }
 
     @PostMapping(value={"/visitor"})

@@ -31,7 +31,7 @@ public class CommentController {
     @PostMapping(value={"/add"})
     public Result<CommentSaveVO> add(@RequestBody @Validated CommentSaveDTO dto) {
         CommentSaveVO vo = this.commentService.add(dto);
-        return Result.success((Object)vo);
+        return Result.success(vo);
     }
 
     @GetMapping(value={"/list"})
@@ -39,7 +39,7 @@ public class CommentController {
         CommentQueryDTO dto = CommentQueryDTO.builder().entryId(entryId).parentId(parentId).sort(sort).page(page).perPage(perPage).build();
         Page commentTreeVOPage = this.commentService.listComments(dto);
         PageResult pageResult = new PageResult(commentTreeVOPage.getRecords(), Long.valueOf(commentTreeVOPage.getTotal()), Long.valueOf(commentTreeVOPage.getCurrent()), Long.valueOf(commentTreeVOPage.getPages()));
-        return Result.success((Object)pageResult);
+        return Result.success(pageResult);
     }
 
     @DeleteMapping(value={"/remove"})
@@ -51,12 +51,12 @@ public class CommentController {
     @GetMapping(value={"/like"})
     public Result<HashMap<String, Object>> like(@RequestParam(value="id") String id, @RequestParam(value="id_add") Boolean idAdd) {
         HashMap res = this.commentService.like(id, idAdd);
-        return Result.success((Object)res);
+        return Result.success(res);
     }
 
     @GetMapping(value={"/dislike"})
     public Result<HashMap<String, Object>> dislike(@RequestParam(value="id") String id, @RequestParam(value="id_add") Boolean idAdd) {
         HashMap dislike = this.commentService.dislike(id, idAdd);
-        return Result.success((Object)dislike);
+        return Result.success(dislike);
     }
 }

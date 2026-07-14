@@ -20,4 +20,8 @@ public class CommentQueryDTO {
     private String parentId;
     @Schema(description="排序方式: newest, oldest, hot")
     private String sort;
+
+    private Integer page;
+
+    private Integer perPage;
 }

@@ -37,14 +37,14 @@ public class ThinkTankController {
     @Operation(summary="创建或更新词条")
     public Result<IdVO> save(@RequestBody @Valid WikiSaveDTO dto) {
         String id = this.thinkTankService.createThinkTank(dto);
-        return Result.success((Object)new IdVO(id));
+        return Result.success(new IdVO(id));
     }
 
     @GetMapping(value={"/entry"})
     @Operation(summary="获取词条详情")
     public Result<WikiContentVO> detail(@RequestParam(value="title", required=false) String title, @RequestParam(value="id", required=false) String id) {
         WikiContentVO wikiContentVO = this.thinkTankService.getThinkTank(title, id);
-        return Result.success((Object)wikiContentVO);
+        return Result.success(wikiContentVO);
     }
 
     @GetMapping(value={"/entries"})
@@ -52,14 +52,14 @@ public class ThinkTankController {
     public Result<PageResult<WikiListVO>> list(@RequestParam(value="page", required=false, defaultValue="1") String pageNum, @RequestParam(value="per_page", required=false, defaultValue="10") String pageSize, @RequestParam(value="sort_by", required=false, defaultValue="update_at") String sortBy, @RequestParam(value="sort_order", required=false, defaultValue="desc") String order, @RequestParam(value="status", required=false, defaultValue="all") String status) {
         List<String> statusList = WikiStateEnum.ALL.getCode().equals(status) ? WikiStateEnum.getAllState() : List.of(status);
         PageResult thinkTankList = this.thinkTankService.getThinkTankList(pageNum, pageSize, sortBy, order, statusList, null, null);
-        return Result.success((Object)thinkTankList);
+        return Result.success(thinkTankList);
     }
 
     @DeleteMapping(value={"/entry"})
     @Operation(summary="删除词条")
     public Result<WikiContentRemoveVO> delete(@RequestParam(value="id") String id) {
         WikiContentRemoveVO wikiContentRemoveVO = this.thinkTankService.deleteThinkTank(id);
-        return Result.success((Object)wikiContentRemoveVO);
+        return Result.success(wikiContentRemoveVO);
     }
 
     @GetMapping(value={"/add-view"})
@@ -73,6 +73,6 @@ public class ThinkTankController {
     @Operation(summary="获取词条数量")
     public Result<Long> count() {
         long count = ((LambdaQueryChainWrapper)this.thinkTankService.lambdaQuery().eq(ThinkTankDO::getState, (Object)WikiStateEnum.PUBLISHED.getCode())).count();
-        return Result.success((Object)count);
+        return Result.success(count);
     }
 }

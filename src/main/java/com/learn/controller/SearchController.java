@@ -36,6 +36,6 @@ public class SearchController {
     @Operation(summary="获取搜索建议")
     public Result<SearchVO> get(@RequestParam(value="search") String search, @RequestParam(name="pageNum", required=false, defaultValue="1") Integer pageNum, @RequestParam(name="per_page", required=false, defaultValue="10") Integer pageSize) {
         SearchVO vo = this.sectionService.searchSuggest(search, pageNum, pageSize);
-        return Result.success((Object)vo);
+        return Result.success(vo);
     }
 }

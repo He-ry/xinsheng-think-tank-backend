@@ -54,14 +54,14 @@ public class UserController {
     @Operation(summary="用户登录接口")
     public Result<LoginTokenVO> login(@RequestBody @Valid UserLoginDTO dto) {
         LoginTokenVO res = this.userService.login(dto);
-        return Result.success((Object)res);
+        return Result.success(res);
     }
 
     @GetMapping(value={"/check"})
     @Operation(summary=" 检查手机号是否可用")
     public Result<HashMap<String, Object>> check(@RequestParam(value="phoneNumber") String phoneNumber) {
         HashMap res = this.userService.checkPhoneNumber(phoneNumber);
-        return Result.success((Object)res);
+        return Result.success(res);
     }
 
     @PostMapping(value={"/cancel-account"})
@@ -75,14 +75,14 @@ public class UserController {
     @Operation(summary="刷新token")
     public Result<HashMap<String, Object>> refreshToken(@RequestBody @Valid RefreshTokenDto dto) {
         HashMap res = this.userService.refreshToken(dto.getWantRefreshAccessToken());
-        return Result.success((Object)res);
+        return Result.success(res);
     }
 
     @GetMapping(value={"/profile"})
     @Operation(summary="获取用户信息")
     public Result<LoginTokenVO.User> getProfile() {
         LoginTokenVO.User res = this.userService.getLoginUser();
-        return Result.success((Object)res);
+        return Result.success(res);
     }
 
     @PostMapping(value={"/profile"})
@@ -110,7 +110,7 @@ public class UserController {
     @Operation(summary="获取所有用户")
     public Result<PageResult<LoginTokenVO.User>> getAllUsers(@RequestParam(required=false, defaultValue="1") Long page, @RequestParam(required=false, defaultValue="10") Long perPage) {
         PageResult allUsers = this.userService.getAllUsers(page, perPage);
-        return Result.success((Object)allUsers);
+        return Result.success(allUsers);
     }
 
     @GetMapping(value={"/admin/users/{userId}"})
@@ -120,7 +120,7 @@ public class UserController {
             throw new ServiceException("用户id不能为空");
         }
         LoginTokenVO.User user = this.userService.getUser(userId);
-        return Result.success((Object)user);
+        return Result.success(user);
     }
 
     @PostMapping(value={"/admin/users/{userId}/role"})
@@ -148,7 +148,7 @@ public class UserController {
     public Result<PageResult<WikiListVO>> getWikis(@RequestParam(value="page", required=false, defaultValue="1") String pageNum, @RequestParam(value="perPage", required=false, defaultValue="10") String pageSize, @RequestParam(value="sortBy", required=false, defaultValue="update_at") String sortBy, @RequestParam(value="sortOrder", required=false, defaultValue="desc") String order, @RequestParam(value="q", required=false, defaultValue="") String q, @RequestParam(value="status", required=false, defaultValue="all") String status) {
         List<String> statusList = WikiStateEnum.ALL.getCode().equals(status) ? WikiStateEnum.getAllState() : List.of(status);
         PageResult wikis = this.userService.getWikis(pageNum, pageSize, sortBy, order, statusList, q);
-        return Result.success((Object)wikis);
+        return Result.success(wikis);
     }
 
     @GetMapping(value={"/submit-wiki-approval/{id}"})

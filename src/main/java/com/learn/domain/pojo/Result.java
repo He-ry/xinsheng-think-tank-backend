@@ -1,21 +1,35 @@
 package com.learn.domain.pojo;
 
 import com.learn.exception.enums.StatusCodeEnum;
-import com.learn.exception.enums.StatusCodeProvider;
-import java.io.Serializable;
-import java.util.List;
-import lombok.Data;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Result<T>
-implements Serializable {
+public class Result<T> implements Serializable {
 
     private Integer code;
     private String message;
     private T data;
+
+    public static <T> Result<T> success() {
+        return Result.<T>builder()
+                .code(StatusCodeEnum.SUCCESS.getCode())
+                .message(StatusCodeEnum.SUCCESS.getMsg())
+                .build();
+    }
+
+    public static <T> Result<T> success(T data) {
+        return Result.<T>builder()
+                .code(StatusCodeEnum.SUCCESS.getCode())
+                .message(StatusCodeEnum.SUCCESS.getMsg())
+                .data(data)
+                .build();
+    }
 }

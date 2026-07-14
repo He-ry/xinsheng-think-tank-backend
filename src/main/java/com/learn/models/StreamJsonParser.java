@@ -46,7 +46,7 @@ public class StreamJsonParser {
 
     private void parseSectionsIncremental(String id, String text, ContentBO content) {
         int idIndex;
-        ArrayList<SectionBO> sections = content.getSections();
+        List<SectionBO> sections = content.getSections();
         if (sections == null) {
             sections = new ArrayList<SectionBO>();
             content.setSections(sections);
