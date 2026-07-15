@@ -24,7 +24,7 @@ public class SystemController {
     @Operation(summary="获取词条总数量")
     public Result<HashMap<String, Object>> count() {
         Long count = this.systemService.count();
-        HashMap<String, Long> map = new HashMap<String, Long>();
+        HashMap<String, Object> map = new HashMap<>();
         map.put("totalCount", count);
         return Result.success(map);
     }

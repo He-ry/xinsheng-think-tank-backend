@@ -4,10 +4,8 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.PhoneUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
-import com.baomidou.mybatisplus.extension.conditions.update.LambdaUpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.learn.config.filter.TokenBlacklist;
@@ -18,6 +16,7 @@ import com.learn.domain.dto.user.UpdatePasswordDTO;
 import com.learn.domain.dto.user.UpdateUserRoleDTO;
 import com.learn.domain.pojo.LoginUser;
 import com.learn.domain.pojo.PageResult;
+import com.learn.domain.pojo.Pagination;
 import com.learn.domain.pojo.UserContext;
 import com.learn.domain.vo.WikiListVO;
 import com.learn.domain.vo.token.LoginTokenVO;
@@ -39,10 +38,8 @@ import com.learn.utils.PasswordUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -60,11 +57,11 @@ public class UserServiceImpl
 extends ServiceImpl<UserMapper, UserDO>
 implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
-    @Value(value="${jwt.access-token.default-expire-seconds}")
+    @Value("${jwt.access-token.default-expire-seconds}")
     private long ACCESS_EXPIRE_SECONDS;
-    @Value(value="${jwt.refresh-token.default-expire-seconds}")
+    @Value("${jwt.refresh-token.default-expire-seconds}")
     private long REFRESH_EXPIRE_SECONDS;
-    @Value(value="${file.upload-dir}")
+    @Value("${file.upload-dir}")
     private String uploadDir;
     @Resource
     private JwtUtil jwtUtil;
@@ -76,78 +73,125 @@ implements UserService {
     private ThinkTankService thinkTankService;
 
     public UserVO register(UserRegisterDTO dto) {
-        List list = ((LambdaQueryChainWrapper)this.lambdaQuery().eq(UserDO::getPhoneNumber, (Object)dto.getPhoneNumber())).list();
-        if (CollUtil.isNotEmpty((Collection)list)) {
-            UserDO first = (UserDO)list.getFirst();
-            log.info("用户已在信胜智库注册:{}", (Object)dto);
-            List roleDOList = this.userRoleService.getUserRole(((UserDO)list.getFirst()).getId());
-            if (!dto.getUsername().equals(((UserDO)list.getFirst()).getUsername()) || !PasswordUtil.encode((String)dto.getPassword()).equals(first.getPassword())) {
-                log.info("用户名不一致或密码不一致:{}", (Object)dto);
+        List<UserDO> list = this.lambdaQuery().eq(UserDO::getPhoneNumber, dto.getPhoneNumber()).list();
+        if (CollUtil.isNotEmpty(list)) {
+            UserDO first = list.getFirst();
+            log.info("用户已在信胜智库注册:{}", dto);
+            List<RoleDO> roleDOList = this.userRoleService.getUserRole(first.getId());
+            if (!dto.getUsername().equals(first.getUsername()) || !PasswordUtil.encode(dto.getPassword()).equals(first.getPassword())) {
+                log.info("用户名不一致或密码不一致:{}", dto);
                 first.setUsername(dto.getUsername());
-                first.setPassword(PasswordUtil.encode((String)dto.getPassword()));
-                this.updateById((Object)first);
+                first.setPassword(PasswordUtil.encode(dto.getPassword()));
+                this.updateById(first);
             }
-            return UserVO.builder().id(first.getId()).username(first.getUsername()).phoneNumber(first.getPhoneNumber()).createdAt(first.getCreatedAt()).isActive(first.getIsActivate()).level(first.getLevel()).role(CollUtil.isEmpty((Collection)roleDOList) ? RoleEnum.NORMAL.getCode() : ((RoleDO)roleDOList.getFirst()).getCode()).experience(first.getExperience()).build();
+            return UserVO.builder()
+                .id(first.getId())
+                .username(first.getUsername())
+                .phoneNumber(first.getPhoneNumber())
+                .createdAt(first.getCreatedAt())
+                .isActive(first.getIsActivate())
+                .level(first.getLevel())
+                .role(CollUtil.isEmpty(roleDOList) ? RoleEnum.NORMAL.getCode() : roleDOList.getFirst().getCode())
+                .experience(first.getExperience())
+                .build();
         }
         String password = dto.getPassword();
         String phoneNumber = dto.getPhoneNumber();
-        if (!PhoneUtil.isPhone((CharSequence)phoneNumber)) {
-            log.info("手机号格式错误:{}", (Object)phoneNumber);
+        if (!PhoneUtil.isPhone(phoneNumber)) {
+            log.info("手机号格式错误:{}", phoneNumber);
             throw new ServiceException("手机号格式不正确！");
         }
-        String encodedPwd = PasswordUtil.encode((String)password);
-        UserDO user = UserDO.builder().username(dto.getUsername()).password(encodedPwd).phoneNumber(dto.getPhoneNumber()).createdAt(Long.valueOf(Instant.now().getEpochSecond())).build();
-        ((LambdaQueryChainWrapper)this.lambdaQuery().eq(UserDO::getUsername, (Object)dto.getUsername())).oneOpt().ifPresent(userDO -> {
+        String encodedPwd = PasswordUtil.encode(password);
+        UserDO user = UserDO.builder()
+            .username(dto.getUsername())
+            .password(encodedPwd)
+            .phoneNumber(dto.getPhoneNumber())
+            .createdAt(Instant.now().getEpochSecond())
+            .build();
+        this.lambdaQuery().eq(UserDO::getUsername, dto.getUsername()).oneOpt().ifPresent(userDO -> {
             throw new ServiceException("用户已经存在");
         });
-        this.saveOrUpdate((Object)user);
-        UserDO userDO2 = (UserDO)this.getById((Serializable)user.getId());
+        this.saveOrUpdate(user);
+        UserDO userDO2 = this.getById(user.getId());
         this.userRoleService.insertUserRole(userDO2.getId(), RoleEnum.NORMAL.getId());
-        return UserVO.builder().id(userDO2.getId()).username(userDO2.getUsername()).phoneNumber(userDO2.getPhoneNumber()).createdAt(userDO2.getCreatedAt()).isActive(userDO2.getIsActivate()).level(userDO2.getLevel()).role(RoleEnum.NORMAL.name()).experience(userDO2.getExperience()).avatar(userDO2.getAvatar() == null ? "" : userDO2.getAvatar()).build();
+        return UserVO.builder()
+            .id(userDO2.getId())
+            .username(userDO2.getUsername())
+            .phoneNumber(userDO2.getPhoneNumber())
+            .createdAt(userDO2.getCreatedAt())
+            .isActive(userDO2.getIsActivate())
+            .level(userDO2.getLevel())
+            .role(RoleEnum.NORMAL.name())
+            .experience(userDO2.getExperience())
+            .avatar(userDO2.getAvatar() == null ? "" : userDO2.getAvatar())
+            .build();
     }
 
-
     public LoginTokenVO login(UserLoginDTO dto) {
-        UserDO user = (UserDO)((LambdaQueryChainWrapper)this.lambdaQuery().eq(UserDO::getUsername, (Object)dto.getUsername())).one();
+        UserDO user = this.lambdaQuery().eq(UserDO::getUsername, dto.getUsername()).one();
         if (user == null) {
             throw new ServiceException("用户不存在");
         }
-        List roleDOList = this.userRoleService.getUserRole(user.getId());
-        if (!PasswordUtil.matches((String)dto.getPassword(), (String)user.getPassword())) {
+        List<RoleDO> roleDOList = this.userRoleService.getUserRole(user.getId());
+        if (!PasswordUtil.matches(dto.getPassword(), user.getPassword())) {
             throw new ServiceException("密码错误");
         }
         if (!Boolean.TRUE.equals(user.getIsActivate())) {
-            user.setIsActivate(Boolean.valueOf(true));
+            user.setIsActivate(true);
             user.setDeleteTime(null);
-            this.updateById((Object)user);
+            this.updateById(user);
         }
         Integer userId = user.getId();
-        StpUtil.login((Object)userId);
-        String accessToken = this.jwtUtil.generate(userId, user.getUsername(), ((RoleDO)roleDOList.getFirst()).getCode(), this.ACCESS_EXPIRE_SECONDS);
-        String refreshToken = this.jwtUtil.generate(userId, user.getUsername(), ((RoleDO)roleDOList.getFirst()).getCode(), this.REFRESH_EXPIRE_SECONDS);
-        LoginTokenVO.User userVO = LoginTokenVO.User.builder().id(userId).username(user.getUsername()).phoneNumber(user.getPhoneNumber()).createdAt(user.getCreatedAt()).role(CollUtil.isEmpty((Collection)roleDOList) ? RoleEnum.NORMAL.getCode() : ((RoleDO)roleDOList.getFirst()).getCode()).isActive(user.getIsActivate()).level(Long.valueOf(user.getLevel() == null ? 0L : (long)user.getLevel().intValue())).experience(Long.valueOf(user.getExperience() == null ? 0L : (long)user.getExperience().intValue())).build();
+        StpUtil.login(userId);
+        String accessToken = this.jwtUtil.generate(userId, user.getUsername(), roleDOList.getFirst().getCode(), this.ACCESS_EXPIRE_SECONDS);
+        String refreshToken = this.jwtUtil.generate(userId, user.getUsername(), roleDOList.getFirst().getCode(), this.REFRESH_EXPIRE_SECONDS);
+        LoginTokenVO.User userVO = LoginTokenVO.User.builder()
+            .id(userId)
+            .username(user.getUsername())
+            .phoneNumber(user.getPhoneNumber())
+            .createdAt(user.getCreatedAt())
+            .role(CollUtil.isEmpty(roleDOList) ? RoleEnum.NORMAL.getCode() : roleDOList.getFirst().getCode())
+            .isActive(user.getIsActivate())
+            .level(user.getLevel() == null ? 0L : user.getLevel().longValue())
+            .experience(user.getExperience() == null ? 0L : user.getExperience().longValue())
+            .build();
         long now = Instant.now().getEpochSecond();
-        return LoginTokenVO.builder().accessToken(accessToken).refreshToken(refreshToken).accessTokenExpiresData(Long.valueOf(now + this.ACCESS_EXPIRE_SECONDS)).refreshTokenExpiresData(Long.valueOf(now + this.REFRESH_EXPIRE_SECONDS)).user(userVO).build();
+        return LoginTokenVO.builder()
+            .accessToken(accessToken)
+            .refreshToken(refreshToken)
+            .accessTokenExpiresData(now + this.ACCESS_EXPIRE_SECONDS)
+            .refreshTokenExpiresData(now + this.REFRESH_EXPIRE_SECONDS)
+            .user(userVO)
+            .build();
     }
 
     public LoginTokenVO.User getLoginUser() {
         Integer userId = UserContext.getUserId();
-        UserDO userDO = (UserDO)this.getById((Serializable)userId);
-        List userRole = this.userRoleService.getUserRole(userId);
-        return LoginTokenVO.User.builder().id(userDO.getId()).username(userDO.getUsername()).phoneNumber(userDO.getPhoneNumber()).createdAt(userDO.getCreatedAt()).role(((RoleDO)userRole.getFirst()).getCode()).isActive(userDO.getIsActivate()).level(Long.valueOf(userDO.getLevel() == null ? 0L : (long)userDO.getLevel().intValue())).experience(Long.valueOf(userDO.getExperience() == null ? 0L : (long)userDO.getExperience().intValue())).avatar(userDO.getAvatar() == null ? "" : userDO.getAvatar()).build();
+        UserDO userDO = this.getById(userId);
+        List<RoleDO> userRole = this.userRoleService.getUserRole(userId);
+        return LoginTokenVO.User.builder()
+            .id(userDO.getId())
+            .username(userDO.getUsername())
+            .phoneNumber(userDO.getPhoneNumber())
+            .createdAt(userDO.getCreatedAt())
+            .role(userRole.getFirst().getCode())
+            .isActive(userDO.getIsActivate())
+            .level(userDO.getLevel() == null ? 0L : userDO.getLevel().longValue())
+            .experience(userDO.getExperience() == null ? 0L : userDO.getExperience().longValue())
+            .avatar(userDO.getAvatar() == null ? "" : userDO.getAvatar())
+            .build();
     }
 
-
     public HashMap<String, Object> checkPhoneNumber(String phoneNumber) {
-        if (StrUtil.isEmpty((CharSequence)phoneNumber)) {
+        if (StrUtil.isEmpty(phoneNumber)) {
             throw new ServiceException("手机号不能为空");
         }
-        if (!PhoneUtil.isPhone((CharSequence)phoneNumber)) {
+        if (!PhoneUtil.isPhone(phoneNumber)) {
             throw new ServiceException("手机号格式错误");
         }
-        HashMap<String, Object> res = new HashMap<String, Object>();
-        List list = ((LambdaQueryChainWrapper)this.lambdaQuery().eq(UserDO::getPhoneNumber, (Object)phoneNumber)).list();
-        if (CollUtil.isEmpty((Collection)list)) {
+        HashMap<String, Object> res = new HashMap<>();
+        List<UserDO> list = this.lambdaQuery().eq(UserDO::getPhoneNumber, phoneNumber).list();
+        if (CollUtil.isEmpty(list)) {
             res.put("available", true);
             res.put("message", "手机号可用，无人注册该手机号。");
             return res;
@@ -157,7 +201,6 @@ implements UserService {
         return res;
     }
 
-
     public void removeAccount() {
         LoginUser loginUser = UserContext.getLoginUser();
         if (loginUser == null) {
@@ -166,15 +209,18 @@ implements UserService {
         if (loginUser.isSuperAdmin()) {
             throw new ServiceException("超级管理员不能注销！");
         }
-        ((LambdaUpdateChainWrapper)((LambdaUpdateChainWrapper)((LambdaUpdateChainWrapper)this.lambdaUpdate().eq(UserDO::getId, (Object)loginUser.getUserId())).set(UserDO::getIsActivate, (Object)false)).set(UserDO::getDeleteTime, (Object)(Instant.now().getEpochSecond() + 259200000L))).update();
+        this.lambdaUpdate()
+            .eq(UserDO::getId, loginUser.getUserId())
+            .set(UserDO::getIsActivate, false)
+            .set(UserDO::getDeleteTime, Instant.now().getEpochSecond() + 259200000L)
+            .update();
     }
 
-
     public HashMap<String, Object> refreshToken(Boolean wantRefreshAccessToken) {
-        HashMap<String, Object> map = new HashMap<String, Object>();
+        HashMap<String, Object> map = new HashMap<>();
         LoginUser loginUser = UserContext.getLoginUser();
         long now = Instant.now().getEpochSecond();
-        if (wantRefreshAccessToken.booleanValue()) {
+        if (wantRefreshAccessToken) {
             long expiresAt = now + this.ACCESS_EXPIRE_SECONDS;
             String token = this.jwtUtil.generate(loginUser.getUserId(), loginUser.getUsername(), loginUser.getRole(), this.ACCESS_EXPIRE_SECONDS);
             map.put("accessToken", token);
@@ -188,69 +234,96 @@ implements UserService {
         return map;
     }
 
-
     public void updateProfile(MultipartFile avatar, String username) {
         String avatarUrl = null;
         if (avatar != null) {
             avatarUrl = this.fileUtils.uploadToLocal(avatar, this.uploadDir);
         }
-        ((LambdaUpdateChainWrapper)((LambdaUpdateChainWrapper)((LambdaUpdateChainWrapper)this.lambdaUpdate().eq(UserDO::getId, (Object)UserContext.getUserId())).set(StrUtil.isNotEmpty((CharSequence)username), UserDO::getUsername, (Object)username)).set(avatar != null, UserDO::getAvatar, (Object)avatarUrl)).update();
+        this.lambdaUpdate()
+            .eq(UserDO::getId, UserContext.getUserId())
+            .set(StrUtil.isNotEmpty(username), UserDO::getUsername, username)
+            .set(avatar != null, UserDO::getAvatar, avatarUrl)
+            .update();
     }
-
 
     public void updatePassword(UpdatePasswordDTO dto) {
         Integer userId = UserContext.getUserId();
-        log.info("userId: {}", (Object)userId);
-        List userList = ((LambdaQueryChainWrapper)this.lambdaQuery().eq(UserDO::getId, (Object)UserContext.getUserId())).select(new SFunction[]{UserDO::getPassword}).list();
-        if (CollUtil.isEmpty((Collection)userList)) {
+        log.info("userId: {}", userId);
+        List<UserDO> userList = this.lambdaQuery()
+            .eq(UserDO::getId, UserContext.getUserId())
+            .select(UserDO::getPassword)
+            .list();
+        if (CollUtil.isEmpty(userList)) {
             throw new ServiceException("用户不存在");
         }
-        UserDO userDO = (UserDO)userList.getFirst();
-        boolean matches = PasswordUtil.matches((String)dto.getOldPassword(), (String)userDO.getPassword());
+        UserDO userDO = userList.getFirst();
+        boolean matches = PasswordUtil.matches(dto.getOldPassword(), userDO.getPassword());
         if (!matches) {
             throw new ServiceException("旧密码错误");
         }
-        if (PasswordUtil.matches((String)dto.getNewPassword(), (String)userDO.getPassword())) {
+        if (PasswordUtil.matches(dto.getNewPassword(), userDO.getPassword())) {
             throw new ServiceException("新密码不能与旧密码相同");
         }
         if (dto.getNewPassword().length() < 6 || dto.getNewPassword().length() > 20) {
             throw new ServiceException("密码长度必须在6到20位之间");
         }
-        ((LambdaUpdateChainWrapper)((LambdaUpdateChainWrapper)this.lambdaUpdate().eq(UserDO::getId, (Object)UserContext.getUserId())).set(UserDO::getPassword, (Object)PasswordUtil.encode((String)dto.getNewPassword()))).update();
+        this.lambdaUpdate()
+            .eq(UserDO::getId, UserContext.getUserId())
+            .set(UserDO::getPassword, PasswordUtil.encode(dto.getNewPassword()))
+            .update();
     }
-
 
     public void logout(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
         String token = header.substring(7);
         Claims claims = this.jwtUtil.parse(token);
         long expire = claims.getExpiration().getTime();
-        TokenBlacklist.add((String)token, (long)expire);
+        TokenBlacklist.add(token, expire);
     }
 
     public PageResult<LoginTokenVO.User> getAllUsers(Long page, Long perPage) {
-        Page pageParam = new Page(page.longValue(), perPage.longValue());
-        Page pageResult = (Page)this.lambdaQuery().page((IPage)pageParam);
-        List records = pageResult.getRecords();
-        if (CollUtil.isNotEmpty((Collection)records)) {
-            HashMap userRoleByUserIds = this.userRoleService.getUserRoleByUserIds(records.stream().map(UserDO::getId).toList());
-            List collect = records.stream().map(item -> {
-                List roles = userRoleByUserIds.getOrDefault(item.getId(), new ArrayList());
-                return LoginTokenVO.User.builder().id(item.getId()).username(item.getUsername()).phoneNumber(item.getPhoneNumber()).createdAt(item.getCreatedAt()).role(CollUtil.isEmpty((Collection)roles) ? RoleEnum.NORMAL.getCode() : ((RoleDO)roles.getFirst()).getCode()).isActive(item.getIsActivate()).level(Long.valueOf(item.getLevel() == null ? 0L : (long)item.getLevel().intValue())).experience(Long.valueOf(item.getExperience() == null ? 0L : (long)item.getExperience().intValue())).avatar(item.getAvatar()).build();
+        Page<UserDO> pageParam = new Page<>(page, perPage);
+        Page<UserDO> pageResult = this.lambdaQuery().page(pageParam);
+        List<UserDO> records = pageResult.getRecords();
+        if (CollUtil.isNotEmpty(records)) {
+            HashMap<Integer, List<RoleDO>> userRoleByUserIds = this.userRoleService.getUserRoleByUserIds(records.stream().map(UserDO::getId).toList());
+            List<LoginTokenVO.User> collect = records.stream().map(item -> {
+                List<RoleDO> roles = userRoleByUserIds.getOrDefault(item.getId(), new ArrayList<>());
+                return LoginTokenVO.User.builder()
+                    .id(item.getId())
+                    .username(item.getUsername())
+                    .phoneNumber(item.getPhoneNumber())
+                    .createdAt(item.getCreatedAt())
+                    .role(CollUtil.isEmpty(roles) ? RoleEnum.NORMAL.getCode() : roles.getFirst().getCode())
+                    .isActive(item.getIsActivate())
+                    .level(item.getLevel() == null ? 0L : item.getLevel().longValue())
+                    .experience(item.getExperience() == null ? 0L : item.getExperience().longValue())
+                    .avatar(item.getAvatar())
+                    .build();
             }).collect(Collectors.toList());
-            return new PageResult(collect, Long.valueOf(pageResult.getTotal()), page, perPage);
+            return new PageResult<>(collect, pageResult.getTotal(), page, perPage);
         }
-        return new PageResult(new ArrayList(), Long.valueOf(pageResult.getTotal()), page, perPage);
+        return new PageResult<>(new ArrayList<>(), pageResult.getTotal(), page, perPage);
     }
 
     public LoginTokenVO.User getUser(Integer userId) {
-        List list = ((LambdaQueryChainWrapper)this.lambdaQuery().eq(UserDO::getId, (Object)userId)).list();
-        if (CollUtil.isEmpty((Collection)list)) {
+        List<UserDO> list = this.lambdaQuery().eq(UserDO::getId, userId).list();
+        if (CollUtil.isEmpty(list)) {
             throw new ServiceException("用户不存在");
         }
-        UserDO userDO = (UserDO)list.getFirst();
-        List roles = this.userRoleService.getUserRole(userId);
-        return LoginTokenVO.User.builder().id(userDO.getId()).username(userDO.getUsername()).phoneNumber(userDO.getPhoneNumber()).createdAt(userDO.getCreatedAt()).role(CollUtil.isEmpty((Collection)roles) ? RoleEnum.NORMAL.getCode() : ((RoleDO)roles.getFirst()).getCode()).isActive(userDO.getIsActivate()).level(Long.valueOf(userDO.getLevel() == null ? 0L : (long)userDO.getLevel().intValue())).experience(Long.valueOf(userDO.getExperience() == null ? 0L : (long)userDO.getExperience().intValue())).avatar(userDO.getAvatar() == null ? "" : userDO.getAvatar()).build();
+        UserDO userDO = list.getFirst();
+        List<RoleDO> roles = this.userRoleService.getUserRole(userId);
+        return LoginTokenVO.User.builder()
+            .id(userDO.getId())
+            .username(userDO.getUsername())
+            .phoneNumber(userDO.getPhoneNumber())
+            .createdAt(userDO.getCreatedAt())
+            .role(CollUtil.isEmpty(roles) ? RoleEnum.NORMAL.getCode() : roles.getFirst().getCode())
+            .isActive(userDO.getIsActivate())
+            .level(userDO.getLevel() == null ? 0L : userDO.getLevel().longValue())
+            .experience(userDO.getExperience() == null ? 0L : userDO.getExperience().longValue())
+            .avatar(userDO.getAvatar() == null ? "" : userDO.getAvatar())
+            .build();
     }
 
     @Transactional(rollbackFor={Exception.class})
@@ -262,49 +335,51 @@ implements UserService {
             throw new ServiceException("没有权限！");
         }
 
-
         if (userId == 1) {
             throw new ServiceException("不能修改超级管理员权限！");
         }
-        ((LambdaUpdateChainWrapper)this.userRoleService.lambdaUpdate().eq(UserRoleDO::getUserId, (Object)userId)).remove();
+        this.userRoleService.lambdaUpdate().eq(UserRoleDO::getUserId, userId).remove();
         String role = dto.getRole();
-        List roleIds = RoleEnum.getRoleIds((String)role);
-        if (CollUtil.isEmpty((Collection)roleIds)) {
+        List<Integer> roleIds = RoleEnum.getRoleIds(role);
+        if (CollUtil.isEmpty(roleIds)) {
             throw new ServiceException("没有该角色");
         }
         UserRoleDO userRoleDO = new UserRoleDO();
         userRoleDO.setUserId(userId);
-        userRoleDO.setRoleId((Integer)roleIds.getFirst());
-        this.userRoleService.save((Object)userRoleDO);
+        userRoleDO.setRoleId(roleIds.getFirst());
+        this.userRoleService.save(userRoleDO);
     }
-
 
     public void updateUserPassword(Integer userId, AdminUpdatePasswordDTO dto) {
         if (userId == null) {
             return;
         }
-        ((LambdaUpdateChainWrapper)((LambdaUpdateChainWrapper)this.lambdaUpdate().eq(UserDO::getId, (Object)userId)).set(UserDO::getPassword, (Object)PasswordUtil.encode((String)dto.getNewPassword()))).update();
+        this.lambdaUpdate()
+            .eq(UserDO::getId, userId)
+            .set(UserDO::getPassword, PasswordUtil.encode(dto.getNewPassword()))
+            .update();
     }
-
 
     public PageResult<WikiListVO> getWikis(String pageNum, String pageSize, String sortBy, String order, List<String> status, String q) {
         Integer userId = UserContext.getUserId();
-        PageResult thinkTankList = this.thinkTankService.getThinkTankList(pageNum, pageSize, sortBy, order, status, String.valueOf(userId), q);
-        PageResult.Pagination pagination = thinkTankList.getPagination();
-        if (CollUtil.isNotEmpty((Collection)thinkTankList.getList())) {
-            return new PageResult(thinkTankList.getList(), pagination.getTotal(), pagination.getCurrentPage(), pagination.getPages());
+        PageResult<WikiListVO> thinkTankList = this.thinkTankService.getThinkTankList(pageNum, pageSize, sortBy, order, status, String.valueOf(userId), q);
+        Pagination pagination = thinkTankList.getPagination();
+        if (CollUtil.isNotEmpty(thinkTankList.getList())) {
+            return new PageResult<>(thinkTankList.getList(), pagination.getTotal(), pagination.getCurrentPage(), pagination.getPages());
         }
-        return new PageResult(new ArrayList(), pagination.getTotal(), pagination.getCurrentPage(), pagination.getPages());
+        return new PageResult<>(new ArrayList<>(), pagination.getTotal(), pagination.getCurrentPage(), pagination.getPages());
     }
-
 
     public void submitWikiApproval(String id) {
         if (id == null) {
             throw new ServiceException("词条id不能为空");
         }
-        if (this.thinkTankService.getById((Serializable)((Object)id)) == null) {
+        if (this.thinkTankService.getById(id) == null) {
             throw new ServiceException("词条不存在");
         }
-        ((LambdaUpdateChainWrapper)((LambdaUpdateChainWrapper)this.thinkTankService.lambdaUpdate().eq(ThinkTankDO::getId, (Object)id)).set(ThinkTankDO::getState, (Object)WikiStateEnum.PENDING_REVIEW.getCode())).update();
+        this.thinkTankService.lambdaUpdate()
+            .eq(ThinkTankDO::getId, id)
+            .set(ThinkTankDO::getState, WikiStateEnum.PENDING_REVIEW.getCode())
+            .update();
     }
 }

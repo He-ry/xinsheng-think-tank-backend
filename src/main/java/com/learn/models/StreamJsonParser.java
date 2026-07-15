@@ -6,6 +6,7 @@ import com.learn.domain.vo.maxkb.MaxKbWikiContentVO;
 import com.learn.models.bo.ContentBO;
 import com.learn.models.bo.SectionBO;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -86,7 +87,7 @@ public class StreamJsonParser {
             this.replaceIds(sectionBO);
             boolean exists = false;
             for (int i = 0; i < sections.size(); ++i) {
-                if (!((SectionBO)sections.get(i)).getId().equals(sectionObj.getStr((Object)"id"))) continue;
+                if (!((SectionBO)sections.get(i)).getId().equals(sectionObj.getStr("id"))) continue;
                 exists = true;
                 sections.set(i, sectionBO);
                 break;

@@ -4,7 +4,6 @@ import cn.hutool.core.collection.CollUtil;
 import com.learn.models.bo.SectionBO;
 import com.learn.models.entity.SectionDO;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -14,37 +13,39 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import lombok.Data;
-/*
- * Exception performing whole class analysis ignored.
- */
+
 @Data
 public class SectionConvertUtil {
     private static final Logger log = LoggerFactory.getLogger(SectionConvertUtil.class);
 
     public static List<SectionDO> convertToDO(String thinkTankId, List<SectionBO> sections, Boolean isUpdate) {
-        ArrayList<SectionDO> result = new ArrayList<SectionDO>();
+        ArrayList<SectionDO> result = new ArrayList<>();
         if (sections == null || sections.isEmpty()) {
             log.info("sections为空");
             return result;
         }
 
-
         for (SectionBO section : sections) {
-            SectionConvertUtil.traverse((SectionBO)section, (String)thinkTankId, null, result, (Boolean)isUpdate);
+            SectionConvertUtil.traverse(section, thinkTankId, null, result, isUpdate);
         }
         return result;
     }
 
     public static Long getTotalWords(String title, List<SectionBO> sections) {
-        return (long)title.length() + SectionConvertUtil.countWords(sections);
+        return (long) title.length() + SectionConvertUtil.countWords(sections);
     }
 
     public static List<Long> getChapterNumber(List<SectionBO> sections) {
-        List sectionDOS = SectionConvertUtil.convertToDO((String)"", sections, (Boolean)false);
-        if (CollUtil.isEmpty((Collection)sectionDOS)) {
+        List<SectionDO> sectionDOS = SectionConvertUtil.convertToDO("", sections, false);
+        if (CollUtil.isEmpty(sectionDOS)) {
             return Collections.emptyList();
         }
-        List<Long> chaptersNum = sectionDOS.stream().collect(Collectors.groupingBy(SectionDO::getLevel, Collectors.counting())).entrySet().stream().sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue).toList();
+        List<Long> chaptersNum = sectionDOS.stream()
+            .collect(Collectors.groupingBy(SectionDO::getLevel, Collectors.counting()))
+            .entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(Map.Entry::getValue)
+            .toList();
         return chaptersNum;
     }
 
@@ -62,7 +63,7 @@ public class SectionConvertUtil {
             return;
         }
         for (SectionBO child : bo.getChildren()) {
-            SectionConvertUtil.traverse((SectionBO)child, (String)thinkTankId, (String)currentId, result, (Boolean)isUpdate);
+            SectionConvertUtil.traverse(child, thinkTankId, currentId, result, isUpdate);
         }
     }
 
@@ -71,7 +72,7 @@ public class SectionConvertUtil {
             return Collections.emptyList();
         }
         Map<String, SectionBO> boMap = sectionDOList.stream().collect(Collectors.toMap(SectionDO::getId, SectionConvertUtil::toBO));
-        ArrayList<SectionBO> roots = new ArrayList<SectionBO>();
+        ArrayList<SectionBO> roots = new ArrayList<>();
         for (SectionDO sectionDO : sectionDOList) {
             SectionBO current = boMap.get(sectionDO.getId());
             String parentId = sectionDO.getParentId();
@@ -82,7 +83,7 @@ public class SectionConvertUtil {
             SectionBO parent = boMap.get(parentId);
             if (parent == null) continue;
             if (parent.getChildren() == null) {
-                parent.setChildren(new ArrayList());
+                parent.setChildren(new ArrayList<>());
             }
             parent.getChildren().add(current);
         }
@@ -95,7 +96,7 @@ public class SectionConvertUtil {
         bo.setHeading(sectionDO.getHeading());
         bo.setContent(sectionDO.getContent());
         bo.setLevel(sectionDO.getLevel());
-        bo.setChildren(new ArrayList());
+        bo.setChildren(new ArrayList<>());
         return bo;
     }
 
@@ -105,7 +106,7 @@ public class SectionConvertUtil {
         }
         long total = 0L;
         for (SectionBO section : sections) {
-            total += SectionConvertUtil.countSection((SectionBO)section);
+            total += SectionConvertUtil.countSection(section);
         }
         return total;
     }
@@ -113,14 +114,14 @@ public class SectionConvertUtil {
     private static long countSection(SectionBO section) {
         long count = 0L;
         if (section.getHeading() != null) {
-            count += (long)section.getHeading().length();
+            count += section.getHeading().length();
         }
         if (section.getContent() != null) {
-            count += (long)section.getContent().length();
+            count += section.getContent().length();
         }
         if (section.getChildren() != null && !section.getChildren().isEmpty()) {
             for (SectionBO child : section.getChildren()) {
-                count += SectionConvertUtil.countSection((SectionBO)child);
+                count += SectionConvertUtil.countSection(child);
             }
         }
         return count;

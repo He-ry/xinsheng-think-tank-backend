@@ -27,9 +27,9 @@ public class MaxKBController {
 
     @PostMapping(value={"/creat-entry"})
     @Operation(summary="AI创建词条")
-    public Result<HashMap<Object, Object>> approval(@RequestParam String title, @RequestParam(required=false) String prompt, @RequestParam(value="files") MultipartFile multipartFile) {
+    public Result<HashMap<String, String>> approval(@RequestParam String title, @RequestParam(required=false) String prompt, @RequestParam(value="files") MultipartFile multipartFile) {
         String s = this.maxKbService.aiCreateEntry(title, prompt, multipartFile);
-        HashMap<String, String> map = new HashMap<String, String>();
+        HashMap<String, String> map = new HashMap<>();
         map.put("aiCreatId", s);
         return Result.success(map);
     }

@@ -27,7 +27,7 @@ public class SearchController {
     @Operation(summary="获取随机推荐")
     public Result<HashMap<String, List<RecommendVO>>> random(@RequestParam(name="num", required=false, defaultValue="5") Integer num) {
         List recommendVO = this.sectionService.random(num);
-        HashMap<String, List> map = new HashMap<String, List>();
+        HashMap<String, List<RecommendVO>> map = new HashMap<>();
         map.put("recommend", recommendVO);
         return Result.success(map);
     }

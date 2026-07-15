@@ -32,4 +32,18 @@ public class Result<T> implements Serializable {
                 .data(data)
                 .build();
     }
+
+    public static <T> Result<T> fail(String message) {
+        return Result.<T>builder()
+                .code(StatusCodeEnum.FAIL.getCode())
+                .message(message)
+                .build();
+    }
+
+    public static <T> Result<T> fail(Integer code, String message) {
+        return Result.<T>builder()
+                .code(code)
+                .message(message)
+                .build();
+    }
 }

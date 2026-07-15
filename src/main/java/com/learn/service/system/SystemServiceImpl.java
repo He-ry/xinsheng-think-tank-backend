@@ -36,8 +36,8 @@ implements SystemService {
         HashMap<String, Object> map = new HashMap<String, Object>();
         map.put("today", 0L);
         map.put("total", 0L);
-        List list = ((LambdaQueryChainWrapper)this.lambdaQuery().in(SystemDO::getSysKey, List.of(SystemKeyEnum.TODAY_VIEWCOUNT.getKey(), SystemKeyEnum.TOTAL_VIEWCOUNT.getKey()))).list();
-        if (CollUtil.isNotEmpty((Collection)list)) {
+        List<SystemDO> list = this.lambdaQuery().in(SystemDO::getSysKey, List.of(SystemKeyEnum.TODAY_VIEWCOUNT.getKey(), SystemKeyEnum.TOTAL_VIEWCOUNT.getKey())).list();
+        if (CollUtil.isNotEmpty(list)) {
             list.forEach(item -> {
                 if (SystemKeyEnum.TODAY_VIEWCOUNT.getKey().equals(item.getSysKey())) {
                     map.put("today", Long.parseLong(item.getValue()));
@@ -52,28 +52,28 @@ implements SystemService {
 
     @Transactional
     public void increaseVisitor() {
-        ((LambdaUpdateChainWrapper)((LambdaUpdateChainWrapper)this.lambdaUpdate().eq(SystemDO::getSysKey, (Object)SystemKeyEnum.TODAY_VIEWCOUNT.getKey())).setSql("value = CAST(value AS UNSIGNED) + 1", new Object[0])).update();
+        this.lambdaUpdate().eq(SystemDO::getSysKey, SystemKeyEnum.TODAY_VIEWCOUNT.getKey()).setSql("value = CAST(value AS UNSIGNED) + 1").update();
     }
 
     @Transactional(rollbackFor={Exception.class})
     public void archiveTodayVisitor() {
         this.ensureKeyExists(SystemKeyEnum.TOTAL_VIEWCOUNT.getKey());
         this.ensureKeyExists(SystemKeyEnum.TODAY_VIEWCOUNT.getKey());
-        SystemDO todayViewCount = (SystemDO)this.systemMapper.selectFirstOne(SystemDO::getSysKey, (Object)SystemKeyEnum.TODAY_VIEWCOUNT.getKey());
-        SystemDO totalViewCount = (SystemDO)this.systemMapper.selectFirstOne(SystemDO::getSysKey, (Object)SystemKeyEnum.TOTAL_VIEWCOUNT.getKey());
-        ((LambdaUpdateChainWrapper)((LambdaUpdateChainWrapper)this.lambdaUpdate().eq(SystemDO::getSysKey, (Object)SystemKeyEnum.TOTAL_VIEWCOUNT.getKey())).set(SystemDO::getValue, (Object)("" + (Long.parseLong(totalViewCount.getValue()) + Long.parseLong(todayViewCount.getValue()))))).update();
-        ((LambdaUpdateChainWrapper)((LambdaUpdateChainWrapper)this.lambdaUpdate().eq(SystemDO::getSysKey, (Object)SystemKeyEnum.TODAY_VIEWCOUNT.getKey())).set(SystemDO::getValue, (Object)"0")).update();
+        SystemDO todayViewCount = this.systemMapper.selectFirstOne(SystemDO::getSysKey, SystemKeyEnum.TODAY_VIEWCOUNT.getKey());
+        SystemDO totalViewCount = this.systemMapper.selectFirstOne(SystemDO::getSysKey, SystemKeyEnum.TOTAL_VIEWCOUNT.getKey());
+        this.lambdaUpdate().eq(SystemDO::getSysKey, SystemKeyEnum.TOTAL_VIEWCOUNT.getKey()).set(SystemDO::getValue, "" + (Long.parseLong(totalViewCount.getValue()) + Long.parseLong(todayViewCount.getValue()))).update();
+        this.lambdaUpdate().eq(SystemDO::getSysKey, SystemKeyEnum.TODAY_VIEWCOUNT.getKey()).set(SystemDO::getValue, "0").update();
     }
 
 
     public void ensureKeyExists(String key) {
-        boolean exists = ((LambdaQueryChainWrapper)this.lambdaQuery().eq(SystemDO::getSysKey, (Object)key)).exists();
+        boolean exists = this.lambdaQuery().eq(SystemDO::getSysKey, key).exists();
         if (!exists) {
             SystemDO systemDO = new SystemDO();
             systemDO.setSysKey(key);
             systemDO.setValue("0");
             systemDO.setDescription("");
-            this.systemMapper.insert((Object)systemDO);
+            this.systemMapper.insert(systemDO);
         }
     }
 }

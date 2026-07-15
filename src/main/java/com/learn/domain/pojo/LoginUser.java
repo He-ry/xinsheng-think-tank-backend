@@ -14,4 +14,8 @@ public class LoginUser {
     private Integer userId;
     private String username;
     private String role;
+
+    public boolean isSuperAdmin() {
+        return RoleEnum.SUPER_ADMIN.getCode().equals(this.role);
+    }
 }

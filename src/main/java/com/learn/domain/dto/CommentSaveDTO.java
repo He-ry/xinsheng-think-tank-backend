@@ -29,4 +29,7 @@ public class CommentSaveDTO {
     @Schema(description="用户ID，随机生成", required=true, example="123456")
     @JsonProperty(value="user_id")
     private String userId;
+    @Schema(description="用户名")
+    @JsonProperty(value="user_name")
+    private String userName;
 }
