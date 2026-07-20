@@ -8,17 +8,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.dromara.autotable.annotation.AutoTable;
-import org.dromara.autotable.annotation.PrimaryKey;
+
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @TableName(value = "sys_user_role")
-@AutoTable(value = "sys_user_role", comment = "用户角色关联表", dialect = "MySQL")
 public class UserRoleDO {
-    @PrimaryKey
     @TableId(type=IdType.AUTO)
     private Integer id;
     @TableField(value="user_id")

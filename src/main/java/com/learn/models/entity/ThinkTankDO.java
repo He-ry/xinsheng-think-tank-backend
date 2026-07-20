@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.dromara.core.trans.vo.TransPojo;
+
 
 @Data
 @Builder
@@ -20,8 +20,7 @@ import org.dromara.core.trans.vo.TransPojo;
 @Schema(name = "ThinkTankDO", description = "百科词条主表")
 @JsonIgnoreProperties(value = {"transMap"})
 public class ThinkTankDO
-implements Serializable,
-TransPojo {
+implements Serializable {
     private static final long serialVersionUID = 1L;
     @Schema(description="词条唯一ID，UUID")
     @TableId(value="id")
