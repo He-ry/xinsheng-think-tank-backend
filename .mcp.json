@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "xinsheng-wiki": {
+      "type": "http",
+      "url": "http://wiki.hery.cloud/mcp"
+    }
+  }
+}
