@@ -11,10 +11,6 @@ services:
       - SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL=jdbc:mysql://mysql:3306/xinsheng-think-tank?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
       - SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME=${MYSQL_USER:-root}
       - SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD=${MYSQL_PASSWORD:-123456}
-      - MINIO_ENDPOINT=${MINIO_ENDPOINT:-http://minio:9000}
-      - MINIO_ACCESS-KEY=${MINIO_ACCESS_KEY:-minioadmin}
-      - MINIO_SECRET-KEY=${MINIO_SECRET_KEY:-minioadmin}
-      - MINIO_BUCKETNAME=${MINIO_BUCKET_NAME:-xinsheng-think-tank}
       - JWT_SECRET=${JWT_SECRET:-learn-xinsheng-think-tank-super-secret-key-32bytes-minimum}
       - MCP_API_KEY=${MCP_API_KEY:-changeme-mcp-api-key}
       - HOST=${HOST:-http://localhost:8080}
@@ -22,32 +18,15 @@ services:
       - MAXKB_API-KEY=${MAXKB_API_KEY:-your-maxkb-api-key}
     depends_on:
       - mysql
-      - minio
     restart: unless-stopped
 
   mysql:
     image: mysql:8.0
     container_name: xinsheng-think-tank-mysql
-    ports:
-      - "3306:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD:-123456}
       - MYSQL_DATABASE=xinsheng-think-tank
     volumes:
       - ./mysql-data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    restart: unless-stopped
-
-  minio:
-    image: minio/minio:latest
-    container_name: xinsheng-think-tank-minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}
-      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-minioadmin}
-    volumes:
-      - ./minio-data:/data
-    command: server /data --console-address ":9001"
     restart: unless-stopped
