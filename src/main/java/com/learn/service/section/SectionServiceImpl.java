@@ -12,6 +12,7 @@ import com.learn.models.entity.SectionDO;
 import com.learn.models.entity.ThinkTankDO;
 import com.learn.models.enums.WikiStateEnum;
 import com.learn.models.mapper.SectionMapper;
+import com.learn.models.mapper.ThinkTankMapper;
 import com.learn.service.section.SectionService;
 import com.learn.service.thinktank.ThinkTankService;
 import jakarta.annotation.Resource;
@@ -29,6 +30,26 @@ implements SectionService {
     private ThinkTankService thinkTankService;
     @Resource
     private SectionMapper sectionMapper;
+    @Resource
+    private ThinkTankMapper thinkTankMapper;
+
+    public SearchVO fulltextSearch(String keyword, Integer pageNum, Integer pageSize) {
+        long offset = (long) (pageNum - 1) * pageSize;
+        List<ThinkTankDO> records = thinkTankMapper.fulltextSearch(keyword, offset, pageSize);
+        // Fallback: if FULLTEXT returns nothing (short query), use LIKE search
+        if (records == null || records.isEmpty()) {
+            return searchSuggest(keyword, pageNum, pageSize);
+        }
+        long total = thinkTankMapper.fulltextSearchCount(keyword);
+        List<SearchVO.SearchItemVO> items = BeanUtil.copyToList(records, SearchVO.SearchItemVO.class);
+        boolean hasPrev = pageNum > 1;
+        boolean hasNext = offset + pageSize < total;
+        return SearchVO.builder()
+                .total(total)
+                .search(items)
+                .pagination(new SearchVO.PaginationVO(pageNum, total, hasPrev, hasNext))
+                .build();
+    }
 
     public SearchVO searchSuggest(String title, Integer pageNum, Integer pageSize) {
         Page<ThinkTankDO> page = this.thinkTankService.lambdaQuery()
