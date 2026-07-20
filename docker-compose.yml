@@ -3,7 +3,7 @@ services:
     image: docker-hub.xinsheng-ai.cn/xinsheng-think-tank/xinsheng-think-tank-backend:latest
     container_name: xinsheng-think-tank-backend
     ports:
-      - "8080:8080"
+      - "8002:8080"
     volumes:
       - ./upload:/app/upload
       - ./application.yml:/app/config/application.yml:ro
@@ -23,6 +23,8 @@ services:
   mysql:
     image: mysql:8.0
     container_name: xinsheng-think-tank-mysql
+    ports:
+      - "3306:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD:-123456}
       - MYSQL_DATABASE=xinsheng-think-tank
